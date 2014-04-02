@@ -26,14 +26,14 @@ _.extend(CacheDb.prototype, Backbone.Events, {
   set: function (modelAttrs, options, cb) {
     var key = this._getKey(modelAttrs);
     debug('cache set (%s):', this.name, key);
-    this.cache.set(key, modelAttrs);
+    this.cache.set(key, _.clone(modelAttrs));
     cb(null, modelAttrs);
   },
 
-  get: function(modelAttrs, options, cb) {
-    var key = this._getKey(modelAttrs);
+  get: function(model, options, cb) {
+    var key = this._getKey(model);
     debug('cache get (%s):', this.name, key);
-    var res = this.cache.get(key);
+    var res = _.clone(this.cache.get(key));
     if (res) {
       debug('cache hit (%s):', this.name, key);
     } else {
@@ -55,12 +55,10 @@ var cachingSync = function(wrappedSync, cache) {
     options = options || {};
 
     function callback(err, res, resp) {
-      debug('callback ' + err + ' ' + JSON.stringify(res));
       if ((err && options.error) || (!err && !res && options.error)) {
         err = err || new Error('not found');
         return options.error(err, resp);
       } else if (options.success && res) {
-        debug('success %s', JSON.stringify(res));
         return options.success(res, resp);
       }
     }
@@ -69,12 +67,12 @@ var cachingSync = function(wrappedSync, cache) {
       cache.set(modelAttrs, options, callback);
     }
 
-    function cacheGet(modelAttrs, options, cb) {
-      cache.get(modelAttrs, options, cb);
+    function cacheGet(model, options, cb) {
+      cache.get(model, options, cb);
     }
 
-    function cacheDel(modelAttrs, options, cb) {
-      cache.del(modelAttrs, options, cb);
+    function cacheDel(model, options, cb) {
+      cache.del(model, options, cb);
     }
 
     var opts = {
