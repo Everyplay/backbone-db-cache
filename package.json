@@ -1,0 +1,38 @@
+{
+  "name": "backbone-db-cache",
+  "version": "0.0.1",
+  "description": "Caching support for backbone-db",
+  "main": "index.js",
+  "keywords": [
+    "backbone",
+    "backbone-db",
+    "cache"
+  ],
+  "scripts": {
+    "test": "make test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/Everyplay/backbone-db-cache.git"
+  },
+  "author": {
+    "name": "mikkolehtinen",
+    "email": "mikko@applifier.com"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "lodash": "~2.4",
+    "backbone-db": "~0.4",
+    "backbone": "~1.1",
+    "debug": "~0.7",
+    "lru-cache": "~2.5.0"
+  },
+  "devDependencies": {
+    "mocha": "~1.18",
+    "jshint": "~2.5",
+    "istanbul": "~0.2.7",
+    "chai": "~1.9.1",
+    "backbone-promises": "~0.2",
+    "sinon": "~1.9.0"
+  }
+}
