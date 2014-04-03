@@ -1,6 +1,6 @@
 {
   "name": "backbone-db-cache",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Caching support for backbone-db",
   "main": "index.js",
   "keywords": [
