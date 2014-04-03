@@ -4,7 +4,7 @@ var Backbone = require('backbone');
 var LRU = require('lru-cache');
 var defaultOptions = {
   max: 500,
-  maxAge: 1000 * 60 * 60
+  maxAge: 1000 * 60 // default to 1 minute
 };
 
 var CacheDb = function CacheDb(name, options) {
@@ -82,8 +82,11 @@ var cachingSync = function(wrappedSync, cache) {
     switch (method) {
       case 'create':
       case 'update':
-        opts.success = cacheSet;
-        return wrappedSync(method, model, _.extend({}, options, opts));
+        cacheDel(model, options, function(err, cachedRes) {
+          if (err) return callback(err);
+          return wrappedSync(method, model, options);
+        });
+        break;
       case 'delete':
         cacheDel(model, options, function(err, cachedRes) {
           if (err) return callback(err);
@@ -91,11 +94,12 @@ var cachingSync = function(wrappedSync, cache) {
         });
         break;
       case 'read':
+        opts.success = cacheSet;
         if (typeof model.get(model.idAttribute) !== 'undefined') {
           cacheGet(model, options, function(err, cachedRes) {
             if (err) return callback(err);
             if (cachedRes) return callback(null, cachedRes);
-            return wrappedSync(method, model, options);
+            return wrappedSync(method, model, _.extend({}, options, opts));
           });
         } else {
           // caching collections is not implemented yet

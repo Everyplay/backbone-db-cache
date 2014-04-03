@@ -27,8 +27,8 @@ describe('Caching CRUD', function() {
     sandbox.restore();
   });
 
-  it('should create new entry in cache when saving a Model', function() {
-    var spy = sandbox.spy(this.modelCache, 'set');
+  it('should save a Model', function() {
+    var spy = sandbox.spy(this.modelCache, 'del');
     model = new this.Model({
       title: 'testtitle',
       value: 45,
@@ -50,8 +50,8 @@ describe('Caching CRUD', function() {
     });
   });
 
-  it('should create new entry in cache when saving AnotherModel', function() {
-    var spy = sandbox.spy(this.anotherModelCache, 'set');
+  it('should save AnotherModel', function() {
+    var spy = sandbox.spy(this.anotherModelCache, 'del');
     another = new this.AnotherModel({
       title: 'anothertitle',
       value: 46,
@@ -60,6 +60,19 @@ describe('Caching CRUD', function() {
     return another.save().then(function() {
       spy.called.should.equal(true);
     });
+  });
+
+  it('should cache upon read', function() {
+    var spy = sandbox.spy(this.db, 'find');
+    var cacheSpy = sandbox.spy(this.modelCache, 'set');
+    model = new this.Model({id: model.id});
+    return model
+      .fetch()
+      .then(function() {
+        model.get('title').should.equal('testtitle');
+        spy.called.should.equal(true);
+        cacheSpy.called.should.equal(true);
+      });
   });
 
   it('should find a Model from cache', function() {
@@ -71,6 +84,19 @@ describe('Caching CRUD', function() {
       .then(function() {
         model.get('title').should.equal('testtitle');
         spy.called.should.equal(false);
+        cacheSpy.called.should.equal(true);
+      });
+  });
+
+  it('should read AnotherModel from main db', function() {
+    var spy = sandbox.spy(this.db, 'find');
+    var cacheSpy = sandbox.spy(this.anotherModelCache, 'set');
+    another = new this.AnotherModel({id: model.id});
+    return another
+      .fetch()
+      .then(function() {
+        another.get('title').should.equal('anothertitle');
+        spy.called.should.equal(true);
         cacheSpy.called.should.equal(true);
       });
   });
@@ -90,7 +116,7 @@ describe('Caching CRUD', function() {
 
   it('should update cache when model is updated', function() {
     var self = this;
-    var cacheSpy = sandbox.spy(this.modelCache, 'set');
+    var cacheSpy = sandbox.spy(this.modelCache, 'del');
     model.set('title', 'newtitle');
     return model
       .save()
