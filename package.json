@@ -24,7 +24,7 @@
     "lodash": "~2.4",
     "backbone-db": "~0.4",
     "backbone": "~1.1",
-    "debug": "~0.7",
+    "debug": "~0.8",
     "lru-cache": "~2.5.0"
   },
   "devDependencies": {
