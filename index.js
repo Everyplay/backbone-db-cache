@@ -10,6 +10,7 @@ var defaultOptions = {
 var CacheDb = function CacheDb(name, options) {
   this.name = name;
   this.options = _.extend({}, defaultOptions, options);
+  this.queue = {};
   this.cache = LRU(this.options);
 };
 
@@ -75,6 +76,29 @@ var cachingSync = function(wrappedSync, cache) {
       cache.del(model, options, cb);
     }
 
+    function isReading(model) {
+      return cache.queue[model.url()] !== undefined;
+    }
+
+    function queueReadCallback(model, callback) {
+      var murl = model.url();
+      cache.queue[murl] = cache.queue[murl] || [];
+      cache.queue[murl].push(callback);
+    }
+
+    function handleReadQueue(model, res, resp) {
+      var murl = model.url();
+      var callbacks = cache.queue[murl];
+      delete cache.queue[murl];
+      _.each(callbacks, function(cb) {
+        cb(null, res, resp);
+      });
+    }
+
+    function resetReadQueue(model) {
+      cache.queue[model.url()] = [];
+    }
+
     var opts = {
       error: callback
     };
@@ -94,17 +118,29 @@ var cachingSync = function(wrappedSync, cache) {
         });
         break;
       case 'read':
-        opts.success = cacheSet;
+          opts.success = function(res, resp) {
+            var error;
+            cache.set(res, options, function() {
+              handleReadQueue(model, res, resp);
+              callback(null, res, resp);
+            });
+          };
         if (typeof model.get(model.idAttribute) !== 'undefined') {
+          if (isReading(model)) {
+            queueReadCallback(model, callback);
+            return;
+          }
           cacheGet(model, options, function(err, cachedRes) {
             if (err) return callback(err);
-            if (cachedRes) return callback(null, cachedRes);
+            if (cachedRes) {
+              return callback(null, cachedRes);
+            }
+            resetReadQueue(model);
             return wrappedSync(method, model, _.extend({}, options, opts));
           });
         } else {
           // caching collections is not implemented yet
           opts.success = function(res, resp) {
-            var error;
             _.each(res, function(m) {
               cache.set(m, options, function() { });
             });

@@ -19,6 +19,7 @@ describe('Caching CRUD', function() {
       self.anotherModelCache = this.anotherModelCache;
       self.Collection = this.Collection;
       self.db = this.db;
+      self.cache = this.cache;
       next();
     });
   });
@@ -167,6 +168,16 @@ describe('Caching CRUD', function() {
         cacheSpy.called.should.equal(true);
       });
   });
+  it('should queue read callbacks on the same object', function() {
+    var dbSpy = sandbox.spy(this.db, 'find');
+    model = new this.Model({id: model.id});
+    this.cache.cache.reset();
+    var model2 = new this.Model({id: model.id});
+    return when.all([model.fetch(), model2.fetch()]).then(function() {
+      dbSpy.callCount.should.equal(1);
+    });
+  });
+
   it('should del entry from cache when model is destroyed', function() {
     var cacheSpy = sandbox.spy(this.modelCache, 'del');
     model = new this.Model({id: model.id});

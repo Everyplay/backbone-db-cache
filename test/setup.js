@@ -4,6 +4,7 @@ var Collection = Promises.Collection;
 var Db = require('backbone-db-local');
 var CacheDb = require('..');
 
+
 var testModelCache = new CacheDb('testmodel-cache', {namespace: 'aa'});
 var TestModel = Model.extend({
   type: 'test',
@@ -31,9 +32,10 @@ var TestCollection = Collection.extend({
 });
 
 exports.setupDb = function(cb) {
-  var db = new Db('caching-test-main-db');
+  var db = new Db('caching-test-main-db', {delay: 10});
   TestModel.prototype.db = db;
   TestCollection.prototype.db = db;
+  this.cache = testModelCache;
   this.Model = TestModel;
   this.modelCache = testModelCache;
   this.AnotherModel = AnotherModel;
