@@ -157,6 +157,16 @@ describe('Caching CRUD', function() {
       });
   });
 
+  it('should populate cache from collection fetch results', function() {
+    var self = this;
+    var cacheSpy = sandbox.spy(this.modelCache, 'set');
+    var collection = new this.Collection();
+    return collection
+      .fetch()
+      .then(function() {
+        cacheSpy.called.should.equal(true);
+      });
+  });
   it('should del entry from cache when model is destroyed', function() {
     var cacheSpy = sandbox.spy(this.modelCache, 'del');
     model = new this.Model({id: model.id});

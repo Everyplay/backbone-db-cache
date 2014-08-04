@@ -1,6 +1,6 @@
 {
   "name": "backbone-db-cache",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Caching support for backbone-db",
   "main": "index.js",
   "keywords": [
@@ -21,10 +21,10 @@
   },
   "license": "MIT",
   "dependencies": {
-    "lodash": "~2.4",
-    "backbone-db": "~0.4",
     "backbone": "~1.1",
+    "backbone-db-local": "^0.5.0",
     "debug": "~0.8",
+    "lodash": "~2.4",
     "lru-cache": "~2.5.0"
   },
   "devDependencies": {

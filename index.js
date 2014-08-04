@@ -103,7 +103,14 @@ var cachingSync = function(wrappedSync, cache) {
           });
         } else {
           // caching collections is not implemented yet
-          return wrappedSync(method, model, options);
+          opts.success = function(res, resp) {
+            var error;
+            _.each(res, function(m) {
+              cache.set(m, options, function() { });
+            });
+            callback(null, res, resp);
+          };
+          return wrappedSync(method, model, _.extend({}, options, opts));
         }
     }
   };

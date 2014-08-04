@@ -1,7 +1,7 @@
 var Promises = require('backbone-promises');
 var Model = Promises.Model;
 var Collection = Promises.Collection;
-var Db = require('backbone-db');
+var Db = require('backbone-db-local');
 var CacheDb = require('..');
 
 var testModelCache = new CacheDb('testmodel-cache', {namespace: 'aa'});
@@ -27,7 +27,7 @@ var TestCollection = Collection.extend({
     'tests';
   },
   model: Model,
-  sync: CacheDb.cachingSync(Db.sync)
+  sync: CacheDb.cachingSync(Db.sync, testModelCache)
 });
 
 exports.setupDb = function(cb) {
