@@ -21,18 +21,18 @@
   },
   "license": "MIT",
   "dependencies": {
-    "backbone": "~1.1",
-    "backbone-db-local": "^0.5.0",
-    "debug": "~0.8",
-    "lodash": "~2.4",
-    "lru-cache": "~2.5.0"
+    "backdash": "^1.1.2-2.4.1",
+    "debug": "^1.0.4",
+    "lodash": "^2.4.1",
+    "lru-cache": "^2.5.0"
   },
   "devDependencies": {
-    "mocha": "~1.18",
-    "jshint": "~2.5",
+    "backbone-db-local": "^0.5.7",
+    "backbone-promises": "^0.2.9",
+    "chai": "^1.9.1",
     "istanbul": "~0.2.7",
-    "chai": "~1.9.1",
-    "backbone-promises": "~0.2",
-    "sinon": "~1.9.0"
+    "jshint": "^2.5.2",
+    "mocha": "^1.21.4",
+    "sinon": "^1.10.3"
   }
 }

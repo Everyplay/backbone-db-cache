@@ -3,7 +3,7 @@ var debug = require('debug')('backbone-db-cache');
 var Backbone = require('backbone');
 var LRU = require('lru-cache');
 var defaultOptions = {
-  max: 500,
+  max: 1000,
   maxAge: 1000 * 60 // default to 1 minute
 };
 
@@ -11,7 +11,7 @@ var CacheDb = function CacheDb(name, options) {
   this.name = name;
   this.options = _.extend({}, defaultOptions, options);
   this.queue = {};
-  this.cache = LRU(this.options);
+  this.cache = new LRU(this.options);
 };
 
 _.extend(CacheDb.prototype, Backbone.Events, {
@@ -26,21 +26,28 @@ _.extend(CacheDb.prototype, Backbone.Events, {
 
   set: function (modelAttrs, options, cb) {
     var key = this._getKey(modelAttrs);
-    debug('cache set (%s):', this.name, key);
+    debug('cache set (%s): %s %o', this.name, key);
     this.cache.set(key, _.clone(modelAttrs));
-    cb(null, modelAttrs);
+    if(cb) cb(null, modelAttrs);
   },
 
   get: function(model, options, cb) {
     var key = this._getKey(model);
-    debug('cache get (%s):', this.name, key);
-    var res = _.clone(this.cache.get(key));
+    debug('cache get (%s): %s', this.name, key);
+    var res = this.cache.get(key);
+    //res = res && JSON.parse(res);
     if (res) {
-      debug('cache hit (%s):', this.name, key);
+      debug('cache hit (%s): %s: %o', this.name, key, res);
     } else {
-      debug('cache miss (%s):', this.name, key);
+      debug('cache miss (%s): %s', this.name, key);
     }
-    cb(null, res);
+    if(cb) cb(null, res);
+    return res;
+  },
+
+  has: function(modelAttrs) {
+    var key = this._getKey(modelAttrs);
+    return this.cache.has(key);
   },
 
   del: function(modelAttrs, options, cb) {
@@ -53,6 +60,7 @@ _.extend(CacheDb.prototype, Backbone.Events, {
 
 var cachingSync = function(wrappedSync, cache) {
   return function sync(method, model, options) {
+    var now = Date.now();
     options = options || {};
 
     function callback(err, res, resp) {
@@ -64,8 +72,8 @@ var cachingSync = function(wrappedSync, cache) {
       }
     }
 
-    function cacheSet(modelAttrs, resp) {
-      cache.set(modelAttrs, options, callback);
+    function cacheSet(modelAttrs, resp, cb) {
+      cache.set(modelAttrs, options, (cb || callback));
     }
 
     function cacheGet(model, options, cb) {
@@ -77,32 +85,41 @@ var cachingSync = function(wrappedSync, cache) {
     }
 
     function isReading(model) {
+      var murl = model.url();
+      debug('queue isReading %s %s', murl, cache.queue[model.url()] !== undefined);
       return cache.queue[model.url()] !== undefined;
     }
 
     function queueReadCallback(model, callback) {
       var murl = model.url();
+      debug('queue read callback for %s', murl);
       cache.queue[murl] = cache.queue[murl] || [];
       cache.queue[murl].push(callback);
     }
 
-    function handleReadQueue(model, res, resp) {
+    function handleReadQueue(model, error, res, resp) {
       var murl = model.url();
       var callbacks = cache.queue[murl];
-      delete cache.queue[murl];
+      debug('handle read queue for %s with %s items', murl, callbacks.length);
+      resetReadQueue(model);
       _.each(callbacks, function(cb) {
-        cb(null, res, resp);
+        cb(error, res, resp);
       });
     }
 
+    function initReadQueue(model) {
+      var murl = model.url();
+      debug('init read queue for %s', murl);
+      cache.queue[murl] = cache.queue[murl] || [];
+    }
+
     function resetReadQueue(model) {
-      cache.queue[model.url()] = [];
+      delete cache.queue[model.url()];
     }
 
     var opts = {
       error: callback
     };
-
     switch (method) {
       case 'create':
       case 'update':
@@ -118,31 +135,44 @@ var cachingSync = function(wrappedSync, cache) {
         });
         break;
       case 'read':
-          opts.success = function(res, resp) {
-            var error;
-            cache.set(res, options, function() {
-              handleReadQueue(model, res, resp);
-              callback(null, res, resp);
-            });
-          };
         if (typeof model.get(model.idAttribute) !== 'undefined') {
-          if (isReading(model)) {
-            queueReadCallback(model, callback);
-            return;
-          }
           cacheGet(model, options, function(err, cachedRes) {
-            if (err) return callback(err);
+            if (err) {
+              return callback(err);
+            }
             if (cachedRes) {
               return callback(null, cachedRes);
             }
-            resetReadQueue(model);
+           if (isReading(model)) {
+              queueReadCallback(model, callback);
+              return;
+            }
+            initReadQueue(model);
+            var now = Date.now();
+            opts.success = function(res, resp) {
+              var error;
+              var url = model.url();
+              debug('model fetch took %s ms', Date.now() - now);
+              cacheSet(res, options, function(err) {
+                handleReadQueue(model, err, res, resp);
+                callback(null, res, resp);
+              });
+            };
+            opts.error = function(err, res) {
+                handleReadQueue(model, err, res);
+                callback(err, res);
+            };
+
             return wrappedSync(method, model, _.extend({}, options, opts));
           });
         } else {
           // caching collections is not implemented yet
           opts.success = function(res, resp) {
             _.each(res, function(m) {
-              cache.set(m, options, function() { });
+              debug('Caching %o',m);
+              if (!cache.has(m)) {
+                cache.set(m, options);
+              }
             });
             callback(null, res, resp);
           };

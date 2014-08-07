@@ -160,7 +160,8 @@ describe('Caching CRUD', function() {
 
   it('should populate cache from collection fetch results', function() {
     var self = this;
-    var cacheSpy = sandbox.spy(this.modelCache, 'set');
+    this.cache.cache.reset();
+    var cacheSpy = sandbox.spy(this.cache, 'set');
     var collection = new this.Collection();
     return collection
       .fetch()
