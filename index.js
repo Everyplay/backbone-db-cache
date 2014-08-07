@@ -1,6 +1,6 @@
 var _ = require('lodash');
 var debug = require('debug')('backbone-db-cache');
-var Backbone = require('backbone');
+var Backbone = require('backdash');
 var LRU = require('lru-cache');
 var defaultOptions = {
   max: 1000,
@@ -154,13 +154,13 @@ var cachingSync = function(wrappedSync, cache) {
               var url = model.url();
               debug('model fetch took %s ms', Date.now() - now);
               cacheSet(res, options, function(err) {
-                handleReadQueue(model, err, res, resp);
                 callback(null, res, resp);
+                handleReadQueue(model, err, res, resp);
               });
             };
             opts.error = function(err, res) {
-                handleReadQueue(model, err, res);
                 callback(err, res);
+                handleReadQueue(model, err, res);
             };
 
             return wrappedSync(method, model, _.extend({}, options, opts));
