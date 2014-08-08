@@ -41,7 +41,7 @@ _.extend(CacheDb.prototype, Backbone.Events, {
     } else {
       debug('cache miss (%s): %s', this.name, key);
     }
-    if(cb) cb(null, res);
+    if(cb) cb(null, _.clone(res));
     return res;
   },
 
@@ -168,12 +168,19 @@ var cachingSync = function(wrappedSync, cache) {
         } else {
           // caching collections is not implemented yet
           opts.success = function(res, resp) {
-            _.each(res, function(m) {
-              debug('Caching %o',m);
-              if (!cache.has(m)) {
-                cache.set(m, options);
+            var results = res;
+            if(results) {
+              if(!_.isArray(results)) {
+                results = [results];
               }
-            });
+              _.each(results, function(m) {
+                debug('Caching %o',m);
+                if (!cache.has(m)) {
+                  cache.set(m, options);
+                }
+              });
+            }
+
             callback(null, res, resp);
           };
           return wrappedSync(method, model, _.extend({}, options, opts));
