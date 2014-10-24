@@ -26,8 +26,8 @@ _.extend(CacheDb.prototype, Backbone.Events, {
 
   set: function (modelAttrs, options, cb) {
     var key = this._getKey(modelAttrs);
-    debug('cache set (%s): %s %o', this.name, key);
-    this.cache.set(key, _.clone(modelAttrs));
+    debug('cache set (%s): %s %o', this.name, key, modelAttrs);
+    this.cache.set(key, _.cloneDeep(modelAttrs));
     if(cb) cb(null, modelAttrs);
   },
 
