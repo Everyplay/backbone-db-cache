@@ -60,7 +60,6 @@ _.extend(CacheDb.prototype, Backbone.Events, {
 
 var cachingSync = function(wrappedSync, cache) {
   return function sync(method, model, options) {
-    var now = Date.now();
     options = options || {};
 
     function callback(err, res, resp) {
@@ -72,7 +71,7 @@ var cachingSync = function(wrappedSync, cache) {
       }
     }
 
-    function cacheSet(modelAttrs, resp, cb) {
+    function cacheSet(modelAttrs, options, cb) {
       cache.set(modelAttrs, options, (cb || callback));
     }
 
@@ -100,7 +99,7 @@ var cachingSync = function(wrappedSync, cache) {
     function handleReadQueue(model, error, res, resp) {
       var murl = model.url();
       var callbacks = cache.queue[murl];
-      debug('handle read queue for %s with %s items', murl, callbacks.length);
+      debug('handle read queue for %s with %d items', murl, callbacks && callbacks.length);
       resetReadQueue(model);
       _.each(callbacks, function(cb) {
         cb(error, res, resp);
@@ -148,11 +147,7 @@ var cachingSync = function(wrappedSync, cache) {
               return;
             }
             initReadQueue(model);
-            var now = Date.now();
             opts.success = function(res, resp) {
-              var error;
-              var url = model.url();
-              debug('model fetch took %s ms', Date.now() - now);
               cacheSet(res, options, function(err) {
                 callback(null, res, resp);
                 handleReadQueue(model, err, res, resp);
@@ -163,7 +158,7 @@ var cachingSync = function(wrappedSync, cache) {
                 handleReadQueue(model, err, res);
             };
 
-            return wrappedSync(method, model, _.extend({}, options, opts));
+            return wrappedSync(method, model, _.defaults(opts, options));
           });
         } else {
           // caching collections is not implemented yet
@@ -183,7 +178,7 @@ var cachingSync = function(wrappedSync, cache) {
 
             callback(null, res, resp);
           };
-          return wrappedSync(method, model, _.extend({}, options, opts));
+          return wrappedSync(method, model, _.defaults(opts, options));
         }
     }
   };
